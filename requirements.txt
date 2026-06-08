@@ -1,0 +1,20 @@
+# Core
+pillow>=10.0
+numpy>=1.24
+pyyaml>=6.0
+tqdm>=4.66
+requests>=2.31
+matplotlib>=3.7
+opencv-python>=4.8
+
+# Teacher model (local backend). Install a CUDA build of torch that matches
+# your GPU/driver; the endpoint backend does not need torch.
+torch>=2.1
+transformers>=4.44
+
+# Student detector + training
+ultralytics>=8.3
+
+# Optional review + dashboard
+fiftyone>=0.24
+gradio>=4.0

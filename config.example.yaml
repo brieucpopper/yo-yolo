@@ -1,0 +1,78 @@
+# =============================================================================
+# YO-YOLO configuration
+# Copy this file (e.g. to `config.yaml`) and edit the values below.
+# =============================================================================
+
+# Folder containing the raw images to annotate and train on.
+images_dir: "/path/to/images"
+
+# Natural-language description of what to detect. This is the ONLY thing the
+# teacher model sees. Be specific; include edge cases you care about.
+class_description: >
+  A ripe yellow banana fruit. Include partially occluded bananas.
+
+# Optional explicit short class name. If omitted, it is derived automatically
+# from `class_description` (e.g. "banana").
+# class_name: "banana"
+
+# Where all pipeline outputs are written.
+working_dir: "./runs/banana"
+
+# Cap the number of images used (null = use them all).
+max_images: null
+
+# Fraction of images held out for validation.
+val_split: 0.2
+seed: 42
+
+# Pause for human review (FiftyOne) after annotation, before training.
+review_after_annotation: true
+
+# -----------------------------------------------------------------------------
+# Teacher model (NVIDIA Locate Anything 3B)
+# -----------------------------------------------------------------------------
+# If `locate_anything_endpoint` is set, the endpoint backend is used.
+# Otherwise the model is loaded locally in-process (needs a GPU).
+locate_anything_endpoint: null   # e.g. "localhost:8000" for a llama.cpp server
+
+teacher:
+  backend: "local"               # "local" | "endpoint" (auto: endpoint if URL set)
+  model_path: "nvidia/Locate-Anything-3B"
+  device: "cuda"
+  dtype: "bfloat16"
+  generation_mode: "fast"        # local only: "fast" | "slow" | "hybrid"
+  endpoint_model: "locate-anything"
+  request_timeout: 300
+
+# -----------------------------------------------------------------------------
+# YOLO training
+# -----------------------------------------------------------------------------
+train:
+  model: "yolo11n.pt"            # or "yolov8n.pt"
+  epochs: 100
+  imgsz: 640
+  batch: 16
+  patience: 30
+  augment:
+    hsv_h: 0.015
+    hsv_s: 0.7
+    hsv_v: 0.4
+    translate: 0.1
+    scale: 0.5
+    fliplr: 0.5
+    mosaic: 1.0
+    mixup: 0.2
+
+# -----------------------------------------------------------------------------
+# Failure mining / dashboard
+# -----------------------------------------------------------------------------
+failure_mining:
+  top_k: 50
+  iou_threshold: 0.5
+
+dashboard:
+  # Optional small chat LLM endpoint (OpenAI-compatible) used as the
+  # "Orchestrator" zero-shot bounding-box baseline. Leave null to disable.
+  orchestrator_endpoint: null
+  orchestrator_model: "gpt-4o-mini"
+  share: false
