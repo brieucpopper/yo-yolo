@@ -25,24 +25,36 @@ decisions. The scripts already do that. Only edit a script if the user asks for
 behavior the scripts don't support (e.g. fancier dataset selection — see
 [parse_dataset.py](./scripts/parse_dataset.py)).
 
+**Use uv for everything python related**, e.g. uv run xx.py
+If the working directory does not have uv, then create a uv environement with python 3.13, and install these requirements
+
+```# Core
+pillow>=10.0
+numpy>=1.24
+pyyaml>=6.0
+tqdm>=4.66
+requests>=2.31
+matplotlib>=3.7
+opencv-python>=4.8
+
+# Teacher model (local backend). Install a CUDA build of torch that matches
+# your GPU/driver; the endpoint backend does not need torch.
+torch>=2.1
+transformers>=4.44
+
+# Student detector + training
+ultralytics>=8.3
+
+# Optional review + dashboard
+fiftyone>=0.24
+gradio>=4.0
+```
+
 **Communicate progress clearly.** The scripts print `tqdm` progress bars and a
 final machine-readable line `YOYOLO_SUMMARY {json}`. After each stage, parse
 that JSON and tell the user what happened (counts, latency, metrics, files
 produced) and what comes next. Surface any difficulties (empty annotations,
 missing GPU, install errors) plainly.
-
-## Setup (once per environment)
-
-The skill lives in this folder. From the skill root:
-
-```bash
-pip install -r requirements.txt
-```
-
-The **local teacher backend** needs a CUDA `torch` + `transformers`. If the
-user instead points to a served model (llama.cpp / vLLM, OpenAI-compatible),
-set `locate_anything_endpoint` and the endpoint backend is used — no GPU torch
-needed for annotation.
 
 ## Step 0 — Collect config
 
@@ -50,8 +62,8 @@ Ask the user (or infer from their message) for:
 
 - `images_dir` — folder of images
 - `class_description` — natural-language description of what to detect
-- `working_dir` — where outputs go (default `./runs/<class_name>`)
-- teacher access — local (default) or `locate_anything_endpoint`
+- `working_dir` — where outputs go (default `./yo_yolo_{current_datetime}`)
+- teacher access — localhost:port (default) or `locate_anything_endpoint`
 - optional: `max_images`, `review_after_annotation`
 
 Create a `config.yaml` by copying [config.example.yaml](./config.example.yaml)
@@ -125,10 +137,5 @@ dashboard_assets/ · logs/
   `class_description`, re-run phase 2.
 - **CUDA / torch errors on local backend** → use `locate_anything_endpoint`
   instead, or install a matching CUDA torch build.
-- **`ultralytics`/`fiftyone`/`gradio` ImportError** → those phases print a clear
-  message and exit; `pip install` the missing package or skip the phase.
-- **Slow annotation** → reduce `max_images` for a first pass, or use the `fast`
-  generation mode (default, local backend only).
 
-See [references/teacher_prompts.md](./references/teacher_prompts.md) for how the
-teacher prompts and output format work.
+If needed (by default it should not be needed, just call the existing scripts, you can see) [references/teacher_prompts.md](./references/teacher_prompts.md) for how the teacher prompts and output format work.
