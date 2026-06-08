@@ -25,8 +25,10 @@ decisions. The scripts already do that. Only edit a script if the user asks for
 behavior the scripts don't support (e.g. fancier dataset selection — see
 [parse_dataset.py](./scripts/parse_dataset.py)).
 
-**Use uv for everything python related**, e.g. uv run xx.py
-If the working directory does not have uv, then create a uv environement with python 3.13, and install these requirements
+**Use uv for everything python related**, e.g. `uv run xx.py`
+If the working directory does not have uv, then create a uv environment with python 3.13, and install these requirements
+
+**Virtual environment reuse:** Use `--venv-path /path/to/venv` with `build_detector.py` to reuse an existing uv environment from a previous YO-YOLO project. If not provided, uv will be used if available, otherwise system python.
 
 ```# Core
 pillow>=10.0
@@ -61,7 +63,7 @@ missing GPU, install errors) plainly.
 Ask the user (or infer from their message) for:
 
 - `images_dir` — folder of images
-- `class_description` — natural-language description of what to detect
+- `class_description` — natural-language description of what to detect (**required**)
 - `working_dir` — where outputs go (default `./yo_yolo_{current_datetime}`)
 - teacher access — localhost:port (default) or `locate_anything_endpoint`
 - optional: `max_images`, `review_after_annotation`

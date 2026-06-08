@@ -1,19 +1,19 @@
 # Locate Anything — teacher prompts & output format
 
 The teacher is **NVIDIA Locate Anything 3B**, wrapped by
-[`LocateAnythingWorker`](../locate_anything.py). YO-YOLO uses **phrase
-grounding (multi-instance)** for annotation.
+[`LocateAnythingWorker`](../locate_anything.py). YO-YOLO uses **multi-class
+detection** for annotation (single teacher call per image).
 
-## Primary call
+## Primary call (multi-class)
 
 ```python
-worker.ground_multi(image, class_description, generation_mode="fast")
+worker.detect(image, class_descriptions, generation_mode="fast")
 ```
 
 which sends the prompt:
 
 ```
-Locate all the instances that match the following description: <class_description>.
+Locate all the instances that matches the following description: <cat1></c><cat2></c>...
 ```
 
 `generation_mode` (local backend only):
@@ -38,17 +38,16 @@ The endpoint backend ignores `generation_mode` (plain text generation).
 
 The model emits boxes as normalized integers in `[0, 1000]`:
 
-```
-<box><x1><y1><x2><y2></box>
-```
+- **Single class (legacy):** `<box><x1><y1><x2><y2></box>`
+- **Multi-class:** `<box><class_id><x1><y1><x2><y2></box>`
 
 Parsed by `LocateAnythingWorker.parse_boxes(answer, width, height)` into pixel
-`{x1, y1, x2, y2}` dicts. Points use `<box><x><y></box>` via `parse_points`.
+`{class_id, x1, y1, x2, y2}` dicts. Points use `<box><x><y></box>` via `parse_points`.
 
 ## YOLO conversion
 
 Pixel `xyxy` → normalized YOLO `class_id xc yc w h` via
-`common.xyxy_to_yolo`. Single class, so `class_id` is always `0`.
+`common.xyxy_to_yolo`. `class_id` matches the teacher output (0..nc-1).
 
 ## Backends
 

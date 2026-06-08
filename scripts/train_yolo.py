@@ -74,6 +74,8 @@ def main() -> None:
         exist_ok=True,
         device=args.device,
         verbose=True,
+        workers=4,
+        pin_memory=False,
         **augment,
     )
     duration = time.perf_counter() - start

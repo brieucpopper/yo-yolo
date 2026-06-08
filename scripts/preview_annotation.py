@@ -80,7 +80,8 @@ def main() -> None:
     grid = make_grid(annotated, cols=2)
     paths["preview_grid"].parent.mkdir(parents=True, exist_ok=True)
     grid.save(paths["preview_grid"])
-    log.info("Saved preview grid -> %s", paths["preview_grid"])
+    abs_path = paths["preview_grid"].resolve()
+    log.info("Saved preview grid -> %s", abs_path)
 
     avg_latency = sum(latencies) / len(latencies) if latencies else 0.0
     print_summary(
@@ -89,7 +90,7 @@ def main() -> None:
             "num_previewed": len(sample),
             "total_boxes": total_boxes,
             "avg_latency_ms": round(avg_latency, 1),
-            "preview_grid": str(paths["preview_grid"]),
+            "preview_grid": str(abs_path),
         }
     )
 

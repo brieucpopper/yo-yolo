@@ -76,7 +76,9 @@ def build_manifest(config: dict) -> dict:
     manifest = {
         "images_dir": str(images_dir),
         "class_name": config["class_name"],
+        "class_names": config.get("class_names", [config["class_name"]]),
         "class_description": config.get("class_description", ""),
+        "class_descriptions": config.get("class_descriptions", [config.get("class_description", "")]),
         "num_images": len(records),
         "num_train": n_train,
         "num_val": len(records) - n_train,
@@ -91,9 +93,9 @@ def build_manifest(config: dict) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser(description="YO-YOLO: scan images and build a manifest")
     ap.add_argument("--config", help="Path to a YAML config file")
-    ap.add_argument("--images-dir")
-    ap.add_argument("--working-dir")
-    ap.add_argument("--class-description")
+    ap.add_argument("--images-dir", required=True)
+    ap.add_argument("--working-dir", required=True)
+    ap.add_argument("--class-description", required=True)
     ap.add_argument("--class-name")
     ap.add_argument("--max-images", type=int)
     ap.add_argument("--val-split", type=float)
@@ -113,9 +115,6 @@ def main() -> None:
             config[key] = val
     if args.recursive:
         config["recursive"] = True
-
-    if not config.get("images_dir") or not config.get("working_dir"):
-        ap.error("images_dir and working_dir are required (via --config or flags)")
 
     config = resolve_config(config)
     paths = working_paths(config["working_dir"])

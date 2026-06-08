@@ -6,14 +6,22 @@
 # Folder containing the raw images to annotate and train on.
 images_dir: "/path/to/images"
 
-# Natural-language description of what to detect. This is the ONLY thing the
+# Natural-language description(s) of what to detect. This is the ONLY thing the
 # teacher model sees. Be specific; include edge cases you care about.
+# REQUIRED. Can be a single string or a list of strings for multi-class.
 class_description: >
   A ripe yellow banana fruit. Include partially occluded bananas.
+# class_description:
+#   - "A ripe yellow banana fruit. Include partially occluded bananas."
+#   - "A green unripe banana fruit."
 
-# Optional explicit short class name. If omitted, it is derived automatically
-# from `class_description` (e.g. "banana").
+# Optional explicit short class name(s). If omitted, derived automatically
+# from `class_description` (e.g. "A ripe yellow banana fruit" → `banana`).
+# For multi-class, provide a list matching class_description order.
 # class_name: "banana"
+# class_name:
+#   - "banana_ripe"
+#   - "banana_unripe"
 
 # Where all pipeline outputs are written.
 working_dir: "./runs/banana"

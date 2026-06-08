@@ -251,12 +251,22 @@ class LocateAnythingWorker:
         """Parse model output into pixel-coordinate bounding boxes.
 
         Coordinates in model output are normalized integers in [0, 1000].
+        For multi-class, format is <box><class_id><x1><y1><x2><y2></box>
+        For single-class, format is <box><x1><y1><x2><y2></box>
         """
         boxes = []
         for m in _BOX_RE.finditer(answer):
-            x1, y1, x2, y2 = (int(g) for g in m.groups())
+            groups = m.groups()
+            if len(groups) == 5:
+                class_id, x1, y1, x2, y2 = (int(g) for g in groups)
+            elif len(groups) == 4:
+                class_id = 0
+                x1, y1, x2, y2 = (int(g) for g in groups)
+            else:
+                continue
             boxes.append(
                 {
+                    "class_id": class_id,
                     "x1": x1 / 1000 * image_width,
                     "y1": y1 / 1000 * image_height,
                     "x2": x2 / 1000 * image_width,

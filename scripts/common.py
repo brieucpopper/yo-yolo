@@ -50,8 +50,28 @@ def resolve_config(config: dict) -> dict:
     cfg.setdefault("review_after_annotation", True)
     cfg.setdefault("val_split", 0.2)
     cfg.setdefault("seed", 42)
-    if not cfg.get("class_name"):
-        cfg["class_name"] = derive_class_name(cfg.get("class_description", "object"))
+
+    class_desc = cfg.get("class_description")
+    if not class_desc:
+        raise ValueError("class_description is required in config")
+
+    # Normalize to list
+    if isinstance(class_desc, str):
+        cfg["class_descriptions"] = [class_desc]
+    else:
+        cfg["class_descriptions"] = class_desc
+
+    class_name = cfg.get("class_name")
+    if not class_name:
+        cfg["class_names"] = [derive_class_name(d) for d in cfg["class_descriptions"]]
+    elif isinstance(class_name, str):
+        cfg["class_names"] = [class_name]
+    else:
+        cfg["class_names"] = class_name
+
+    # Backward compatibility
+    cfg["class_description"] = cfg["class_descriptions"][0]
+    cfg["class_name"] = cfg["class_names"][0]
     return cfg
 
 

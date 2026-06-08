@@ -62,11 +62,16 @@ def main() -> None:
     paths = working_paths(config["working_dir"])
     log = get_logger("dataset_qa", config["working_dir"])
 
+    manifest = read_json(paths["manifest"])
+    class_names = manifest.get("class_names", [manifest.get("class_name", "object")])
+    nc = len(class_names)
+
     num_images = 0
     num_objects = 0
     empty_images = 0
     per_image_counts = []
     sizes = {"small": 0, "medium": 0, "large": 0}
+    class_counts = {name: 0 for name in class_names}
     issues = {
         "invalid_class_id": 0,
         "out_of_range_coords": 0,
@@ -103,8 +108,10 @@ def main() -> None:
                 continue
 
             num_objects += 1
-            if cid != 0:
+            if cid < 0 or cid >= nc:
                 issues["invalid_class_id"] += 1
+            else:
+                class_counts[class_names[cid]] = class_counts.get(class_names[cid], 0) + 1
             if not all(0.0 <= v <= 1.0 for v in (xc, yc, w, h)):
                 issues["out_of_range_coords"] += 1
             if w <= 0 or h <= 0:
@@ -134,6 +141,8 @@ def main() -> None:
         "validation_issues": issues,
         "total_issues": total_issues,
         "passed": total_issues == 0,
+        "class_names": class_names,
+        "class_counts": class_counts,
     }
     write_json(paths["qa_stats"], stats)
     _write_report(paths["qa_report"], config, stats)
@@ -146,14 +155,22 @@ def main() -> None:
 
 def _write_report(path: Path, config: dict, stats: dict) -> None:
     s = stats
+    class_names = s.get("class_names", [config.get("class_name", "object")])
+    class_counts = s.get("class_counts", {})
     lines = [
-        f"# Dataset QA — {config.get('class_name', 'object')}",
+        f"# Dataset QA — {', '.join(class_names)}",
         "",
         "## Dataset Statistics",
         f"- Image count: **{s['num_images']}**",
         f"- Object count: **{s['num_objects']}**",
         f"- Objects per image: **{s['objects_per_image']}**",
         f"- Empty images: **{s['empty_images']}** ({s['empty_image_pct']}%)",
+        "",
+        "## Per-Class Counts",
+    ]
+    for name in class_names:
+        lines.append(f"- {name}: **{class_counts.get(name, 0)}**")
+    lines += [
         "",
         "## Bounding Box Sizes",
         f"- Small (<1% area): **{s['bbox_sizes']['small']}**",

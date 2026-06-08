@@ -42,7 +42,12 @@ def _teacher_boxes_for(stem: str, paths: dict) -> tuple[list, int, int]:
     meta_path = paths["metadata"] / f"{stem}.json"
     if meta_path.exists():
         meta = read_json(meta_path)
-        boxes = [[b["x1"], b["y1"], b["x2"], b["y2"]] for b in meta.get("boxes_xyxy", [])]
+        boxes = []
+        for b in meta.get("boxes_xyxy", []):
+            boxes.append({
+                "xyxy": [b["x1"], b["y1"], b["x2"], b["y2"]],
+                "class_id": b.get("class_id", 0),
+            })
         return boxes, meta.get("width", 0), meta.get("height", 0)
     return [], 0, 0
 
@@ -85,6 +90,15 @@ def main() -> None:
         "weights": str(weights),
     }
 
+    # Per-class metrics if available
+    if hasattr(box, 'ap50') and hasattr(box.ap50, '__len__') and len(box.ap50) > 1:
+        metrics["per_class"] = {}
+        for i, (ap50, ap) in enumerate(zip(box.ap50, box.ap)):
+            metrics["per_class"][i] = {
+                "mAP50": float(ap50),
+                "mAP50_95": float(ap),
+            }
+
     # Per-image predictions + YOLO latency.
     val_images = sorted(p for p in paths["images_val"].iterdir() if p.is_file()
                         ) if paths["images_val"].exists() else []
@@ -99,7 +113,8 @@ def main() -> None:
         yolo_boxes = []
         for b in res.boxes:
             xyxy = b.xyxy[0].tolist()
-            yolo_boxes.append({"xyxy": xyxy, "confidence": float(b.conf[0])})
+            cls_id = int(b.cls[0]) if hasattr(b, 'cls') and b.cls is not None else 0
+            yolo_boxes.append({"xyxy": xyxy, "confidence": float(b.conf[0]), "class_id": cls_id})
 
         teacher_boxes, tw, th = _teacher_boxes_for(img_path.stem, paths)
         write_json(

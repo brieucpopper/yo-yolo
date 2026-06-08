@@ -43,13 +43,13 @@ from common import (  # noqa: E402
 from locate_anything import LocateAnythingWorker, worker_from_config  # noqa: E402
 
 
-def write_data_yaml(paths: dict, class_name: str) -> None:
+def write_data_yaml(paths: dict, class_names: list[str]) -> None:
     data = {
         "path": str(paths["dataset"].resolve()),
         "train": "images/train",
         "val": "images/val",
-        "names": {0: class_name},
-        "nc": 1,
+        "names": {i: name for i, name in enumerate(class_names)},
+        "nc": len(class_names),
     }
     with open(paths["data_yaml"], "w", encoding="utf-8") as fh:
         yaml.safe_dump(data, fh, sort_keys=False)
@@ -72,14 +72,17 @@ def main() -> None:
 
     manifest = read_json(paths["manifest"])
     records = manifest["images"]
-    class_name = manifest["class_name"]
-    phrase = config["class_description"]
-    gen_mode = config.get("teacher", {}).get("generation_mode", "fast")
+    class_names = manifest.get("class_names", [manifest["class_name"]])
+    class_descriptions = manifest.get("class_descriptions", [manifest.get("class_description", "")])
 
     log.info("Loading teacher (%s backend)...", config.get("teacher", {}).get("backend", "auto"))
     worker: LocateAnythingWorker = worker_from_config(config)
 
+    gen_mode = config.get("teacher", {}).get("generation_mode", "fast")
+    kwargs = {"generation_mode": gen_mode} if worker.backend == "local" else {}
+
     total_boxes, empty_images, latencies = 0, 0, []
+    class_box_counts = {name: 0 for name in class_names}
 
     for rec in tqdm(records, desc="Annotating", unit="img"):
         src = Path(rec["path"])
@@ -95,19 +98,24 @@ def main() -> None:
             log.warning("Skipping unreadable image %s (%s)", src, exc)
             continue
 
-        kwargs = {"generation_mode": gen_mode} if worker.backend == "local" else {}
-        result = worker.ground_multi(image, phrase, **kwargs)
-        boxes = LocateAnythingWorker.parse_boxes(result["answer"], image.width, image.height)
+        # Single teacher call for all classes using detect() with </c>-joined categories
+        result = worker.detect(image, class_descriptions, **kwargs)
+        all_boxes = LocateAnythingWorker.parse_boxes(result["answer"], image.width, image.height)
         latencies.append(result["latency_ms"])
 
         shutil.copy2(src, dst_img)
 
         lines = []
-        for b in boxes:
+        for b in all_boxes:
+            cid = b.get("class_id", 0)
+            if cid >= len(class_names):
+                continue
             xc, yc, w, h = xyxy_to_yolo(b, image.width, image.height)
             if w <= 0 or h <= 0:
                 continue
-            lines.append(f"0 {xc:.6f} {yc:.6f} {w:.6f} {h:.6f}")
+            lines.append(f"{cid} {xc:.6f} {yc:.6f} {w:.6f} {h:.6f}")
+            class_box_counts[class_names[cid]] = class_box_counts.get(class_names[cid], 0) + 1
+
         (lbl_dir / f"{stem}.txt").write_text("\n".join(lines) + ("\n" if lines else ""))
 
         total_boxes += len(lines)
@@ -123,13 +131,13 @@ def main() -> None:
                 "width": image.width,
                 "height": image.height,
                 "num_boxes": len(lines),
-                "boxes_xyxy": boxes,
+                "boxes_xyxy": all_boxes,
                 "latency_ms": result["latency_ms"],
                 "raw_answer": result["answer"],
             },
         )
 
-    write_data_yaml(paths, class_name)
+    write_data_yaml(paths, class_names)
 
     avg_latency = sum(latencies) / len(latencies) if latencies else 0.0
     annotation_stats = {
@@ -138,7 +146,8 @@ def main() -> None:
         "empty_images": empty_images,
         "avg_latency_ms": round(avg_latency, 2),
         "total_teacher_seconds": round(sum(latencies) / 1000.0, 2),
-        "class_name": class_name,
+        "class_names": class_names,
+        "boxes_per_class": class_box_counts,
     }
     write_json(paths["dataset"] / "annotation_stats.json", annotation_stats)
     log.info("Annotation done: %d boxes across %d images", total_boxes, len(records))
