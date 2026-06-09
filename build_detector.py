@@ -52,7 +52,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="YO-YOLO one-shot pipeline")
     ap.add_argument("--config", required=True)
     ap.add_argument("--yes", action="store_true", help="Skip the preview approval prompt")
-    ap.add_argument("--no-review", action="store_true", help="Skip the FiftyOne review phase")
+    ap.add_argument("--no-review", action="store_true", help="Skip the Voxel51 review phase")
     ap.add_argument("--no-dashboard", action="store_true", help="Do not launch the dashboard at the end")
     ap.add_argument("--venv-path", help="Path to existing uv virtual environment to reuse")
     args = ap.parse_args()
@@ -99,19 +99,19 @@ def main() -> None:
     report_path = Path(wd) / "report.md"
     print(f"\n  Report:     file://{report_path.resolve()}")
 
-    # Launch Gradio dashboard in background
+    # Launch web interface in background
     if not args.no_dashboard:
         try:
             run("launch_dashboard.py", python, *cfg, "--background")
-            print(f"  Dashboard:  http://localhost:7860")
+            print(f"  Web interface:  http://localhost:7860")
         except SystemExit as exc:
             print(f"(Dashboard skipped: {exc})")
 
-    # Launch FiftyOne (Voxel51) review in background (unless --no-review)
+    # Launch Voxel51 review in background (unless --no-review)
     if not args.no_review:
         try:
             run("launch_fiftyone.py", python, *cfg, "--split", "val")
-            print(f"  FiftyOne:   http://localhost:5151")
+            print(f"  Voxel51:   http://localhost:5151")
         except SystemExit as exc:
             print(f"(FiftyOne skipped: {exc})")
 

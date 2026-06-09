@@ -18,12 +18,12 @@ No manual annotation. No active learning. No complex agent planning — just
 | 2 | Preview | Annotate 4 images so you can sanity-check the prompt |
 | 3 | Annotate | Run the teacher over the full dataset → YOLO labels |
 | 4 | QA | Dataset stats + label validation |
-| 5 | Review | *(optional)* Inspect labels in FiftyOne |
+| 5 | Review | *(optional)* Inspect labels in Voxel51 |
 | 6 | Train | Train YOLO11n with sensible augmentations |
 | 7 | Evaluate | mAP50 / mAP50-95 / precision / recall |
 | 8 | Failure mining | Surface top teacher-vs-student disagreements |
 | 9 | Report | Assemble a markdown report |
-| 10 | Dashboard | Gradio live inference (teacher vs YOLO vs LLM) |
+| 10 | Dashboard | Web interface — test the model interactively (teacher vs YOLO vs LLM) |
 
 ## Quick Start
 
@@ -62,11 +62,11 @@ No manual annotation. No active learning. No complex agent planning — just
    # flags: --yes (skip preview prompt), --no-review, --no-dashboard
    ```
 
-6. **Inspect & deploy.** Open the dashboard, FiftyOne review, or read `report.md`:
+6. **Inspect & deploy.** Open the web interface, Voxel51 review, or read `report.md`:
 
    ```bash
-   python scripts/launch_dashboard.py --config config.yaml    # http://localhost:7860
-   python scripts/launch_fiftyone.py --config config.yaml     # http://localhost:5151
+   python scripts/launch_dashboard.py --config config.yaml    # http://localhost:7860 (test model interactively)
+   python scripts/launch_fiftyone.py --config config.yaml     # http://localhost:5151 (explore annotations)
    ```
 
 ## Outputs (in `working_dir`)

@@ -103,7 +103,17 @@ def main() -> None:
         all_boxes = LocateAnythingWorker.parse_boxes(result["answer"], image.width, image.height)
         latencies.append(result["latency_ms"])
 
-        shutil.copy2(src, dst_img)
+        # Downscale to max 1800px on longest side to keep dataset manageable
+        MAX_DIM = 1800
+        if max(image.width, image.height) > MAX_DIM:
+            ratio = MAX_DIM / max(image.width, image.height)
+            image_resized = image.resize(
+                (int(image.width * ratio), int(image.height * ratio)),
+                Image.LANCZOS,
+            )
+        else:
+            image_resized = image
+        image_resized.save(dst_img)
 
         lines = []
         for b in all_boxes:

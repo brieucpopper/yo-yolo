@@ -102,7 +102,7 @@ def main() -> None:
         name="train",
         exist_ok=True,
         device=args.device,
-        verbose=True,
+        verbose=False,
         workers=2,
         **augment,
     )

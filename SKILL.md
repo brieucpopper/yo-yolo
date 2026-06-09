@@ -1,6 +1,6 @@
 ---
 name: yo-yolo
-description: 'Build Your Own YOLO (YO-YOLO). Turn a folder of images + a natural-language object description into a trained, deployable YOLO detector — auto-labeled by NVIDIA Locate Anything 3B as a teacher. USE WHEN the user wants to: create/train a custom object detector, auto-annotate/auto-label images from a text prompt, distill a vision-language model into a fast YOLO, build a dataset from a description, or run the YO-YOLO pipeline (parse, preview, annotate, QA, review, train, evaluate, failure mining, report, dashboard). Keywords: YOLO, object detection, auto-annotation, auto-labeling, Locate Anything, teacher-student, dataset bootstrapping, train detector, Ultralytics, FiftyOne, Gradio.'
+description: 'Build Your Own YOLO (YO-YOLO). Turn a folder of images + a natural-language object description into a trained, deployable YOLO detector — auto-labeled by NVIDIA Locate Anything 3B as a teacher. USE WHEN the user wants to: create/train a custom object detector, auto-annotate/auto-label images from a text prompt, distill a vision-language model into a fast YOLO, build a dataset from a description, or run the YO-YOLO pipeline (parse, preview, annotate, QA, review, train, evaluate, failure mining, report, dashboard). Keywords: YOLO, object detection, auto-annotation, auto-labeling, Locate Anything, teacher-student, dataset bootstrapping, train detector, Ultralytics, Voxel51, Gradio.'
 argument-hint: 'images dir + what to detect (e.g. "./photos, detect ripe bananas")'
 ---
 
@@ -47,7 +47,7 @@ transformers>=4.44
 # Student detector + training
 ultralytics>=8.3
 
-# Optional review + dashboard
+# Optional review (Voxel51) + dashboard (Gradio)
 fiftyone>=0.24
 gradio>=4.0
 ```
@@ -90,12 +90,12 @@ and report to the user.
 | 2 | Preview (4 imgs) | `uv run python scripts/preview_annotation.py --config <config.yaml>` | **show grid, ask approval** |
 | 3 | Full annotation | `uv run python scripts/annotate_dataset.py --config <config.yaml>` | — |
 | 4 | Dataset QA | `uv run python scripts/dataset_qa.py --config <config.yaml>` | flag issues |
-| 5 | Review (optional) | `uv run python scripts/launch_fiftyone.py --config <config.yaml>` | only if `review_after_annotation` |
+| 5 | Review (Voxel51) | `uv run python scripts/launch_fiftyone.py --config <config.yaml>` | only if `review_after_annotation` |
 | 6 | Train YOLO | `uv run python scripts/train_yolo.py --config <config.yaml>` | — |
 | 7 | Evaluate | `uv run python scripts/evaluate.py --config <config.yaml>` | report metrics |
 | 8 | Failure mining | `uv run python scripts/failure_mining.py --config <config.yaml>` | — |
 | 9 | Report | `uv run python scripts/generate_report.py --config <config.yaml>` | — |
-| 10 | Dashboard + Voxel | see Phase 10 section below | — |
+| 10 | Dashboard + Voxel51 | see Phase 10 section below | — |
 
 ### Phase 2 gate — preview approval (important)
 
@@ -107,29 +107,29 @@ user refine `class_description` and re-run phase 2 before continuing.
 **Always print the full absolute path to the preview grid image** (e.g.
 `/abs/path/to/yo_yolo_.../preview_grid.png`) so the user can open it directly.
 
-### Phase 5 gate — optional review
+### Phase 5 gate — optional review (Voxel51)
 
-Only run if `review_after_annotation` is true. FiftyOne is long-running; launch
+Only run if `review_after_annotation` is true. Voxel51 is long-running; launch
 it, tell the user the URL, and continue when they're done. Skip gracefully if
-FiftyOne isn't installed.
+Voxel51 isn't installed.
 
 ### Phase 6 — training
 
 Long-running. Pass through user overrides like `--epochs`, `--batch`,
 `--device 0`. Report duration and where `best.pt` landed.
 
-### Phase 10 — dashboard + Voxel51 (both in background)
+### Phase 10 — web interface + Voxel51 (both in background)
 
 Launch **both** servers in the background. Parse each `YOYOLO_SUMMARY` to
 confirm they started, then print the URLs and report path explicitly and stop.
 Do NOT block on the dashboard.
 
 ```bash
-# 1. FiftyOne — background, port 5151
+# 1. Voxel51 — explore annotations and predictions, port 5151
 uv run python scripts/launch_fiftyone.py --config <config.yaml> \
     --background --port 5151 --split val
 
-# 2. Gradio dashboard — background, port 7860
+# 2. Web interface — test the model interactively, port 7860
 uv run python scripts/launch_dashboard.py --config <config.yaml> \
     --background --port 7860
 ```
@@ -140,9 +140,9 @@ user:
 ```
 Pipeline complete.
 
-Report:    <absolute path to report.md>
-FiftyOne:  http://localhost:5151
-Dashboard: http://localhost:7860
+Report:           <absolute path to report.md>
+Voxel51:          http://localhost:5151
+Web interface:    http://localhost:7860
 
 To stop:
   kill $(cat <working_dir>/logs/fiftyone.pid)
@@ -156,8 +156,8 @@ the orchestrator exits.
 
 Always print these three items explicitly:
 - Full absolute path to `report.md`
-- FiftyOne URL: **http://localhost:5151**
-- Gradio dashboard URL: **http://localhost:7860**
+- Voxel51 URL (explore annotations and predictions): **http://localhost:5151**
+- Web interface URL (test the model interactively): **http://localhost:7860**
 
 ## One-shot alternative
 

@@ -185,6 +185,15 @@ class LocateAnythingWorker:
     ) -> str:
         import requests  # local import keeps the module import-light
 
+        # Resize large images so base64 doesn't blow the server context window
+        max_dim = 1000
+        if max(image.width, image.height) > max_dim:
+            ratio = max_dim / max(image.width, image.height)
+            image = image.resize(
+                (int(image.width * ratio), int(image.height * ratio)),
+                Image.LANCZOS,
+            )
+
         data_url = f"data:image/png;base64,{self._encode_image(image)}"
         payload = {
             "model": self.endpoint_model,
