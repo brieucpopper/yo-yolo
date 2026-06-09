@@ -24,6 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from common import (  # noqa: E402
     draw_boxes,
     get_logger,
+    get_model_class_color,
     load_config,
     print_summary,
     read_json,
@@ -63,7 +64,8 @@ def main() -> None:
     sample = rng.sample(image_paths, min(args.num, len(image_paths)))
 
     worker: LocateAnythingWorker = worker_from_config(config)
-    phrase = config["class_description"]
+    class_descriptions = config.get("class_descriptions", [config.get("class_description", "")])
+    class_names = config.get("class_names", [config.get("class_name", "object")])
     gen_mode = config.get("teacher", {}).get("generation_mode", "fast")
 
     annotated, total_boxes, latencies = [], 0, []
@@ -71,17 +73,24 @@ def main() -> None:
         log.info("Previewing %d/%d: %s", i, len(sample), Path(p).name)
         image = Image.open(p).convert("RGB")
         kwargs = {"generation_mode": gen_mode} if worker.backend == "local" else {}
-        result = worker.ground_multi(image, phrase, **kwargs)
+        result = worker.detect(image, class_descriptions, **kwargs)
         boxes = LocateAnythingWorker.parse_boxes(result["answer"], image.width, image.height)
         total_boxes += len(boxes)
         latencies.append(result["latency_ms"])
-        annotated.append(draw_boxes(image, boxes, labels=[config["class_name"]] * len(boxes)))
+        labels = []
+        colors = []
+        for b in boxes:
+            cid = b.get("class_id", 0)
+            labels.append(class_names[cid] if cid < len(class_names) else f"class_{cid}")
+            colors.append(get_model_class_color("teacher", cid))
+        annotated.append(draw_boxes(image, boxes, color=colors, labels=labels))
 
     grid = make_grid(annotated, cols=2)
     paths["preview_grid"].parent.mkdir(parents=True, exist_ok=True)
     grid.save(paths["preview_grid"])
     abs_path = paths["preview_grid"].resolve()
     log.info("Saved preview grid -> %s", abs_path)
+    print(f"Preview grid: {abs_path}")
 
     avg_latency = sum(latencies) / len(latencies) if latencies else 0.0
     print_summary(

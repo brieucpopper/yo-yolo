@@ -224,18 +224,71 @@ def yolo_to_xyxy(xc: float, yc: float, w: float, h: float, img_w: int, img_h: in
 
 # ---------------------------------------------------------------- drawing
 
+# Per-model per-class color palettes.
+# Each model gets a distinct hue family; classes vary within that family.
+# Index as: MODEL_PALETTES[model_key][class_id % len(palette)]
+_PALETTE_TEACHER: list[tuple[int, int, int]] = [
+    (255, 60,  60),   # class 0 — red
+    (255, 140,  0),   # class 1 — orange
+    (255, 60, 180),   # class 2 — hot pink
+    (200, 20,  20),   # class 3 — deep red
+    (255, 210,  0),   # class 4 — gold
+    (255, 100, 80),   # class 5 — coral
+    (220, 80, 160),   # class 6 — rose
+    (255, 160, 80),   # class 7 — peach
+]
+
+_PALETTE_YOLO: list[tuple[int, int, int]] = [
+    (60,  210, 60),   # class 0 — green
+    (0,   200, 180),  # class 1 — teal
+    (120, 240,  0),   # class 2 — lime
+    (0,   160, 120),  # class 3 — dark teal
+    (0,   230, 80),   # class 4 — emerald
+    (180, 255, 80),   # class 5 — yellow-green
+    (0,   200, 100),  # class 6 — mint
+    (60,  180, 60),   # class 7 — forest
+]
+
+_PALETTE_ORCH: list[tuple[int, int, int]] = [
+    (80,  120, 255),  # class 0 — blue
+    (160, 80,  255),  # class 1 — purple
+    (0,   180, 255),  # class 2 — sky blue
+    (100, 20,  220),  # class 3 — dark purple
+    (80,  220, 255),  # class 4 — cyan
+    (200, 100, 255),  # class 5 — lavender
+    (0,   140, 220),  # class 6 — royal blue
+    (120, 60,  200),  # class 7 — indigo
+]
+
+MODEL_PALETTES: dict[str, list[tuple[int, int, int]]] = {
+    "teacher": _PALETTE_TEACHER,
+    "yolo":    _PALETTE_YOLO,
+    "orch":    _PALETTE_ORCH,
+}
+
+
+def get_model_class_color(model: str, class_id: int) -> tuple[int, int, int]:
+    """Return the RGB color for a (model, class_id) pair.
+
+    ``model`` is one of ``"teacher"``, ``"yolo"``, ``"orch"``.
+    Falls back to the teacher palette for unknown model keys.
+    """
+    palette = MODEL_PALETTES.get(model, _PALETTE_TEACHER)
+    return palette[int(class_id) % len(palette)]
+
 
 def draw_boxes(
     image,
     boxes: list,
-    color: tuple[int, int, int] = (255, 64, 64),
+    color: "tuple[int,int,int] | list[tuple[int,int,int]]" = (255, 64, 64),
     width: int = 3,
     labels: Optional[list[str]] = None,
-    dashed: bool = False,
 ):
     """Draw xyxy boxes on a copy of a PIL image and return it.
 
     ``boxes`` may be a list of ``[x1, y1, x2, y2]`` or dicts with x1..y2 keys.
+    ``color`` may be a single RGB tuple (applied to all boxes) or a list of RGB
+    tuples (one per box; wraps around if shorter than ``boxes``).
     """
     from PIL import ImageDraw, ImageFont
 
@@ -246,41 +299,20 @@ def draw_boxes(
     except Exception:  # noqa: BLE001
         font = None
 
+    color_list: list | None = color if isinstance(color, list) else None
+    single_color: tuple | None = color if not isinstance(color, list) else None
+
     for idx, box in enumerate(boxes):
         if isinstance(box, dict):
             xy = [box["x1"], box["y1"], box["x2"], box["y2"]]
         else:
             xy = list(box[:4])
-        if dashed:
-            _draw_dashed_rect(draw, xy, color, width)
-        else:
-            draw.rectangle(xy, outline=color, width=width)
+        c = color_list[idx % len(color_list)] if color_list else single_color
+        x1, y1, x2, y2 = xy
+        draw.line([(x1, y1), (x2, y1), (x2, y2), (x1, y2), (x1, y1)], fill=c, width=width)
         if labels and idx < len(labels) and labels[idx]:
             txt = labels[idx]
             ty = max(0, xy[1] - 12)
-            draw.rectangle([xy[0], ty, xy[0] + 7 * len(txt) + 4, ty + 12], fill=color)
+            draw.rectangle([xy[0], ty, xy[0] + 7 * len(txt) + 4, ty + 12], fill=c)
             draw.text((xy[0] + 2, ty), txt, fill=(255, 255, 255), font=font)
     return img
-
-
-def _draw_dashed_rect(draw, xy, color, width, dash=8):
-    x1, y1, x2, y2 = xy
-    for (xa, ya, xb, yb) in (
-        (x1, y1, x2, y1),
-        (x2, y1, x2, y2),
-        (x2, y2, x1, y2),
-        (x1, y2, x1, y1),
-    ):
-        length = max(abs(xb - xa), abs(yb - ya))
-        if length == 0:
-            continue
-        steps = int(length // dash)
-        for s in range(0, steps + 1, 2):
-            t0 = s / max(steps, 1)
-            t1 = min((s + 1) / max(steps, 1), 1.0)
-            draw.line(
-                [xa + (xb - xa) * t0, ya + (yb - ya) * t0,
-                 xa + (xb - xa) * t1, ya + (yb - ya) * t1],
-                fill=color,
-                width=width,
-            )

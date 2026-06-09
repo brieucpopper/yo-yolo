@@ -62,20 +62,48 @@ def main() -> None:
     log.info("Training %s for %d epochs (imgsz=%d, batch=%d)", model_name, epochs, imgsz, batch)
     model = YOLO(model_name)
 
+    patience = tcfg.get("patience", 30)
+
+    class LossPlateauStopper:
+        def __init__(self, model, patience, log):
+            self.model = model
+            self.patience = patience
+            self.log = log
+            self.best_loss = float("inf")
+            self.plateau_epochs = 0
+
+        def on_train_epoch_end(self, trainer):
+            loss = trainer.loss_items
+            if hasattr(loss, "__iter__"):
+                current = float(loss[0])  # box_loss
+            else:
+                current = float(loss)
+            if current < self.best_loss:
+                self.best_loss = current
+                self.plateau_epochs = 0
+            else:
+                self.plateau_epochs += 1
+                if self.plateau_epochs >= self.patience:
+                    self.log.info("Loss plateau for %d epochs (best=%.4f). Stopping early.", self.patience, self.best_loss)
+                    trainer.stop_train = True
+                    trainer.epoch = trainer.epoch - 1  # don't count the plateau epochs
+
+    stopper = LossPlateauStopper(model, patience, log)
+    model.add_callback("on_train_epoch_end", stopper.on_train_epoch_end)
+
     start = time.perf_counter()
     results = model.train(
         data=str(paths["data_yaml"]),
         epochs=epochs,
         imgsz=imgsz,
         batch=batch,
-        patience=tcfg.get("patience", 30),
+        patience=patience,
         project=str(paths["runs"]),
         name="train",
         exist_ok=True,
         device=args.device,
         verbose=True,
-        workers=4,
-        pin_memory=False,
+        workers=2,
         **augment,
     )
     duration = time.perf_counter() - start

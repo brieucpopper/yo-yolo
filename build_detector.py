@@ -15,6 +15,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -88,9 +89,33 @@ def main() -> None:
     run("failure_mining.py", python, *cfg)
     run("generate_report.py", python, *cfg)
 
-    print("\nPipeline complete. Outputs are in the working dir.")
+    print("\n" + "=" * 60)
+    print("Pipeline complete. Outputs are in the working dir.")
+    print("=" * 60)
+
+    # Print report path
+    config_data = json.loads(Path(args.config).read_text()) if Path(args.config).exists() else {}
+    wd = config_data.get("working_dir", ".")
+    report_path = Path(wd) / "report.md"
+    print(f"\n  Report:     file://{report_path.resolve()}")
+
+    # Launch Gradio dashboard in background
     if not args.no_dashboard:
-        run("launch_dashboard.py", python, *cfg, "--background")
+        try:
+            run("launch_dashboard.py", python, *cfg, "--background")
+            print(f"  Dashboard:  http://localhost:7860")
+        except SystemExit as exc:
+            print(f"(Dashboard skipped: {exc})")
+
+    # Launch FiftyOne (Voxel51) review in background (unless --no-review)
+    if not args.no_review:
+        try:
+            run("launch_fiftyone.py", python, *cfg, "--split", "val")
+            print(f"  FiftyOne:   http://localhost:5151")
+        except SystemExit as exc:
+            print(f"(FiftyOne skipped: {exc})")
+
+    print()
 
 
 if __name__ == "__main__":

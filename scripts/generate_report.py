@@ -25,6 +25,7 @@ from common import (  # noqa: E402
     draw_boxes,
     ensure_dirs,
     get_logger,
+    get_model_class_color,
     load_config,
     print_summary,
     read_json,
@@ -54,8 +55,16 @@ def _sample_montage(paths: dict, n: int = 6) -> list[str]:
             img = Image.open(pred["image"]).convert("RGB")
         except Exception:  # noqa: BLE001
             continue
-        vis = draw_boxes(img, pred.get("teacher_boxes", []), color=(255, 64, 64), dashed=True)
-        vis = draw_boxes(vis, [b["xyxy"] for b in pred.get("yolo_boxes", [])], color=(64, 200, 64))
+        teacher_raw = pred.get("teacher_boxes", [])
+        yolo_raw    = pred.get("yolo_boxes", [])
+        teacher_boxes  = [b["xyxy"] if isinstance(b, dict) else b for b in teacher_raw]
+        yolo_boxes     = [b["xyxy"] if isinstance(b, dict) else b for b in yolo_raw]
+        teacher_colors = [get_model_class_color("teacher", b.get("class_id", 0) if isinstance(b, dict) else 0)
+                          for b in teacher_raw]
+        yolo_colors    = [get_model_class_color("yolo",    b.get("class_id", 0) if isinstance(b, dict) else 0)
+                          for b in yolo_raw]
+        vis = draw_boxes(img, teacher_boxes, color=teacher_colors)
+        vis = draw_boxes(vis, yolo_boxes, color=yolo_colors)
         out = paths["dashboard_assets"] / f"sample_{pf.stem}.png"
         vis.save(out)
         out_paths.append(out)
@@ -133,7 +142,7 @@ def main() -> None:
     L.append("")
 
     L.append("## Sample Predictions\n")
-    L.append("_Teacher = red dashed, YOLO = green._\n")
+    L.append("_Teacher = warm colors (red family), YOLO = cool colors (green family)._\n")
     for s in samples:
         L.append(f"![sample]({_rel(s, base)})")
     L.append("")

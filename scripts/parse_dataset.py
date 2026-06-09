@@ -91,15 +91,19 @@ def build_manifest(config: dict) -> dict:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="YO-YOLO: scan images and build a manifest")
-    ap.add_argument("--config", help="Path to a YAML config file")
-    ap.add_argument("--images-dir", required=True)
-    ap.add_argument("--working-dir", required=True)
-    ap.add_argument("--class-description", required=True)
-    ap.add_argument("--class-name")
-    ap.add_argument("--max-images", type=int)
-    ap.add_argument("--val-split", type=float)
-    ap.add_argument("--recursive", action="store_true")
+    ap = argparse.ArgumentParser(
+        description="YO-YOLO: scan images and build a manifest",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="When --config is given all other flags become optional overrides.",
+    )
+    ap.add_argument("--config", help="Path to a YAML config file (all other args become optional overrides)")
+    ap.add_argument("--images-dir", help="Folder containing raw images (overrides config)")
+    ap.add_argument("--working-dir", help="Where pipeline outputs go (overrides config)")
+    ap.add_argument("--class-description", help="Natural-language description of what to detect (overrides config)")
+    ap.add_argument("--class-name", help="Short YOLO-safe class name (auto-derived if omitted)")
+    ap.add_argument("--max-images", type=int, help="Cap number of images used")
+    ap.add_argument("--val-split", type=float, help="Fraction held out for validation")
+    ap.add_argument("--recursive", action="store_true", help="Scan images_dir recursively")
     args = ap.parse_args()
 
     config = load_config(args.config) if args.config else {}
@@ -115,6 +119,14 @@ def main() -> None:
             config[key] = val
     if args.recursive:
         config["recursive"] = True
+
+    # Validate required fields (may come from config or CLI)
+    missing = [f for f in ("images_dir", "working_dir", "class_description") if not config.get(f)]
+    if missing:
+        ap.error(
+            f"Missing required field(s): {missing}. "
+            "Provide via --config <file> or explicit CLI flags."
+        )
 
     config = resolve_config(config)
     paths = working_paths(config["working_dir"])

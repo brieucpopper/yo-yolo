@@ -41,7 +41,7 @@ review_after_annotation: true
 # -----------------------------------------------------------------------------
 # If `locate_anything_endpoint` is set, the endpoint backend is used.
 # Otherwise the model is loaded locally in-process (needs a GPU).
-locate_anything_endpoint: null   # e.g. "localhost:8000" for a llama.cpp server
+locate_anything_endpoint: "localhost:8080"   # default endpoint server
 
 teacher:
   backend: "local"               # "local" | "endpoint" (auto: endpoint if URL set)
@@ -57,9 +57,9 @@ teacher:
 # -----------------------------------------------------------------------------
 train:
   model: "yolo11n.pt"            # or "yolov8n.pt"
-  epochs: 100
+  epochs: 20
   imgsz: 640
-  batch: 16
+  batch: 8
   patience: 30
   augment:
     hsv_h: 0.015

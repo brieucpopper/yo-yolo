@@ -6,8 +6,8 @@ set. Each validation image is scored by combining:
 * count mismatch (teacher boxes vs YOLO boxes), and
 * localization error (1 - mean IoU of greedily matched boxes).
 
-The top-K images are rendered side by side (teacher = red dashed, YOLO = green)
-into `failures/` together with an `index.json`.
+The top-K images are rendered side by side (teacher = warm/red palette,
+YOLO = green palette) into `failures/` together with an `index.json`.
 
 Usage:
     python scripts/failure_mining.py --config config.yaml [--top-k 50]
@@ -29,6 +29,7 @@ from common import (  # noqa: E402
     draw_boxes,
     ensure_dirs,
     get_logger,
+    get_model_class_color,
     iou_xyxy,
     load_config,
     print_summary,
@@ -43,10 +44,11 @@ def greedy_mean_iou(teacher: list, yolo: list) -> float:
     """Mean IoU of greedily matched boxes (0 if either side empty)."""
     if not teacher or not yolo:
         return 0.0
-    yolo_xyxy = [b["xyxy"] for b in yolo]
+    teacher_xyxy = [b["xyxy"] if isinstance(b, dict) else b for b in teacher]
+    yolo_xyxy = [b["xyxy"] if isinstance(b, dict) else b for b in yolo]
     used = set()
     ious = []
-    for t in teacher:
+    for t in teacher_xyxy:
         best, best_j = 0.0, -1
         for j, y in enumerate(yolo_xyxy):
             if j in used:
@@ -125,12 +127,18 @@ def main() -> None:
             image = Image.open(pred["image"]).convert("RGB")
         except Exception:  # noqa: BLE001
             continue
-        teacher_xyxy = pred.get("teacher_boxes", [])
-        yolo_xyxy = [b["xyxy"] for b in pred.get("yolo_boxes", [])]
-        vis = draw_boxes(image, teacher_xyxy, color=(255, 64, 64), dashed=True)
+        teacher_raw = pred.get("teacher_boxes", [])
+        yolo_raw = pred.get("yolo_boxes", [])
+        teacher_boxes = [b["xyxy"] if isinstance(b, dict) else b for b in teacher_raw]
+        yolo_boxes    = [b["xyxy"] if isinstance(b, dict) else b for b in yolo_raw]
+        teacher_colors = [get_model_class_color("teacher", b.get("class_id", 0) if isinstance(b, dict) else 0)
+                          for b in teacher_raw]
+        yolo_colors    = [get_model_class_color("yolo", b.get("class_id", 0) if isinstance(b, dict) else 0)
+                          for b in yolo_raw]
+        vis = draw_boxes(image, teacher_boxes, color=teacher_colors)
         vis = draw_boxes(
-            vis, yolo_xyxy, color=(64, 200, 64),
-            labels=[f"{b['confidence']:.2f}" for b in pred.get("yolo_boxes", [])],
+            vis, yolo_boxes, color=yolo_colors,
+            labels=[f"{b['confidence']:.2f}" if isinstance(b, dict) else "" for b in yolo_raw],
         )
         out = paths["failures"] / f"{rank:03d}_{Path(pred['image']).stem}.png"
         vis.save(out)

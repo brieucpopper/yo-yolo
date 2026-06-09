@@ -23,7 +23,7 @@ No manual annotation. No active learning. No complex agent planning — just
 | 7 | Evaluate | mAP50 / mAP50-95 / precision / recall |
 | 8 | Failure mining | Surface top teacher-vs-student disagreements |
 | 9 | Report | Assemble a markdown report |
-| 10 | Dashboard | Interactive Gradio comparison (teacher vs YOLO vs LLM) |
+| 10 | Dashboard | Gradio live inference (teacher vs YOLO vs LLM) |
 
 ## Quick Start
 
@@ -62,10 +62,11 @@ No manual annotation. No active learning. No complex agent planning — just
    # flags: --yes (skip preview prompt), --no-review, --no-dashboard
    ```
 
-6. **Inspect & deploy.** Open the dashboard, read `report.md`, ship `best.pt`:
+6. **Inspect & deploy.** Open the dashboard, FiftyOne review, or read `report.md`:
 
    ```bash
-   python scripts/launch_dashboard.py --config config.yaml
+   python scripts/launch_dashboard.py --config config.yaml    # http://localhost:7860
+   python scripts/launch_fiftyone.py --config config.yaml     # http://localhost:5151
    ```
 
 ## Outputs (in `working_dir`)
