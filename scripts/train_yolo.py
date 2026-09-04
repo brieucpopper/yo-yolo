@@ -74,8 +74,13 @@ def main() -> None:
 
         def on_train_epoch_end(self, trainer):
             loss = trainer.loss_items
-            if hasattr(loss, "__iter__"):
-                current = float(loss[0])  # box_loss
+            if isinstance(loss, dict):
+                current = float(loss.get("box", next(iter(loss.values()))))
+            elif hasattr(loss, "__iter__"):
+                try:
+                    current = float(loss[0])  # box_loss
+                except (KeyError, IndexError, TypeError):
+                    current = float(list(loss)[0])
             else:
                 current = float(loss)
             if current < self.best_loss:
