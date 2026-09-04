@@ -24,6 +24,12 @@
 
 ## Example: volleyball highlights
 
+Why this example? It is the hardest realistic case for the idea: the ball is
+tiny (<15 px), blurred, often occluded — and the video is long (5.5 min), so
+running the teacher on every frame (~80 min) is a non-starter. If distillation
+works here, it works anywhere: a few minutes of teacher time buys a detector
+that watches the whole match in ~2 min and cuts highlights on its own.
+
 Full match replay (FRA vs ROC, Tokyo 2020 — 8,246 frames, 25 fps, 5.5 min).
 The teacher is too slow for the whole video (~80 min), so:
 
