@@ -10,6 +10,10 @@
 
 ![NVIDIA Locate Anything 3B — the teacher](docs/volleyball/teacher.png)
 
+## The demo: finding highlights in a volleyball match
+
+Imagine you have a full volleyball match replay and want highlight clips, but watching 5+ minutes to find every rally is tedious. The trick: a rally is simply a stretch where the ball is visible throughout — so if you can detect the ball in every frame, the highlights cut themselves. The catch is that the ball is tiny and the video is long, which is exactly what the demo below proves yo-yolo can handle.
+
 ## Key numbers (volleyball demo)
 
 | What | Number |
