@@ -6,6 +6,8 @@
 - **DISTILLATION** into a YOLO11n student that runs ~55× faster (~11 ms vs ~600 ms).
 - **AGENT SKILL**: plain scripts + `YOYOLO_SUMMARY` JSON per stage — an agent (or one command) drives: describe → label → train → inspect.
 
+![How yo-yolo works: distill the slow generalist into a fast specialist](docs/distillation.png)
+
 ![NVIDIA Locate Anything 3B — the teacher](docs/volleyball/teacher.png)
 
 ## Key numbers (volleyball demo)
