@@ -1,0 +1,40 @@
+images_dir: "/home/brieuc/code/yo-yolo/data/volleyball_frames"
+class_description: >
+  volleyball
+class_name: "ball"
+working_dir: "./runs/volleyball_rally"
+max_images: 512
+val_split: 0.2
+seed: 42
+review_after_annotation: false
+locate_anything_endpoint: "localhost:8080"
+teacher:
+  backend: "endpoint"
+  model_path: "nvidia/Locate-Anything-3B"
+  device: "cuda"
+  dtype: "bfloat16"
+  generation_mode: "fast"
+  endpoint_model: "LocateAnything-3B-Q4_K_M.gguf"
+  request_timeout: 300
+train:
+  model: "yolo11n.pt"
+  epochs: 30
+  imgsz: 640
+  batch: 8
+  patience: 30
+  augment:
+    hsv_h: 0.015
+    hsv_s: 0.7
+    hsv_v: 0.4
+    translate: 0.1
+    scale: 0.5
+    fliplr: 0.5
+    mosaic: 1.0
+    mixup: 0.2
+failure_mining:
+  top_k: 50
+  iou_threshold: 0.5
+dashboard:
+  orchestrator_endpoint: null
+  orchestrator_model: "gpt-4o-mini"
+  share: false
