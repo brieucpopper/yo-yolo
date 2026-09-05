@@ -12,6 +12,7 @@
 
 ## Special thanks
 All of the code and even this README was written by agents via OpenCode, this project was a learning opportunity to see how fast it was possible to iterate on a small project like this one using 100% AI coding models. 
+The idea for the project is mine, I thought it was really cool that NVIDIA has such a precise model for bounding boxes cause even recent Gemini VLMs which are quite good at image processing tasks have very vague bounding boxes (they are roughly on the object but not with a precise outline)
 
 ## The demo: finding highlights in a volleyball match
 
