@@ -2,8 +2,8 @@
 
 > One sentence + a folder of images → a fast, deployable detector. No manual labeling.
 
-- **VISION-LANGUAGE MODEL** as teacher: `NVIDIA Locate Anything 3B` finds anything you can name.
-- **DISTILLATION** into a `YOLO11n student` that runs ~55× faster (~11 ms vs ~600 ms).
+- **VISION-LANGUAGE MODEL** as teacher: `NVIDIA Locate Anything 3B` finds anything you can name and creates annotations. No human annotation required !!
+- **DISTILLATION** : The annotated images enable training a `YOLO11n student` that runs ~55× faster (~11 ms vs ~600 ms).
 - **AGENT SKILL**: the core of the code is a Markdown agent skill along with template python scripts, so you can just ask your agent to train your own YOLO with a /yo-yolo
 
 ![How yo-yolo works: distill the slow generalist into a fast specialist](docs/distillation.png)
