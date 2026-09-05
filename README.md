@@ -4,7 +4,7 @@
 
 - **VISION-LANGUAGE MODEL** as teacher: `NVIDIA Locate Anything 3B` finds anything you can name.
 - **DISTILLATION** into a `YOLO11n student` that runs ~55× faster (~11 ms vs ~600 ms).
-- **AGENT SKILL**: plain scripts + `YOYOLO_SUMMARY` JSON per stage — an agent (or one command) drives: describe → label → train → inspect.
+- **AGENT SKILL**: the core of the code is a Markdown agent skill along with template python scripts, so you can just ask your agent to train your own YOLO with a /yo-yolo
 
 ![How yo-yolo works: distill the slow generalist into a fast specialist](docs/distillation.png)
 
